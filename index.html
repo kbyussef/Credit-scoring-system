@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Scoring API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy: #0a1628;
+            --navy2: #112240;
+            --blue: #1a56db;
+            --blue-light: #e8f0fe;
+            --accent: #00b4d8;
+            --success: #0d9488;
+            --success-bg: #f0fdfa;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --border: rgba(255,255,255,0.08);
+            --muted: #94a3b8;
+            --text: #e2e8f0;
+            --surface: rgba(255,255,255,0.04);
+            --surface2: rgba(255,255,255,0.07);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--navy);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container { max-width: 680px; margin: 0 auto; }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--navy2);
+            border-radius: 14px 14px 0 0;
+            border: 0.5px solid var(--border);
+            border-bottom: none;
+        }
+
+        .top-bar-left { display: flex; align-items: center; gap: 10px; }
+
+        .logo-dot {
+            width: 32px; height: 32px;
+            background: var(--blue);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 500; color: #fff;
+        }
+
+        .top-bar h1 { font-size: 15px; font-weight: 500; color: #fff; }
+        .top-bar-badge {
+            font-size: 11px; color: var(--muted);
+            background: var(--surface);
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 0.5px solid var(--border);
+        }
+
+        .body {
+            background: var(--navy2);
+            border: 0.5px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 14px 14px;
+            padding: 1.5rem;
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 1.5rem 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--border);
+        }
+        .section-label:first-child { margin-top: 0; }
+
+        .card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+        }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .field label {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .field input, .field select {
+            width: 100%;
+            padding: 8px 11px;
+            background: var(--surface2);
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 7px;
+            font-size: 13px;
+            font-family: 'DM Mono', monospace;
+            color: #fff;
+            transition: border-color 0.15s;
+            outline: none;
+        }
+
+        .field input:focus, .field select:focus {
+            border-color: var(--blue);
+        }
+
+        .field select option { background: var(--navy2); color: #fff; }
+
+        .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .toggle {
+            padding: 6px 16px;
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            color: var(--muted);
+            transition: all 0.15s;
+        }
+
+        .toggle:hover { border-color: var(--blue); color: #fff; }
+
+        .toggle.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        .btn-predict {
+            width: 100%;
+            padding: 12px;
+            margin-top: 1.5rem;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .btn-predict:hover { opacity: 0.88; }
+        .btn-predict:active { transform: scale(0.99); }
+
+        .btn-predict.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .result { margin-top: 1.25rem; display: none; }
+        .result.show { display: block; }
+
+        .result-header {
+            padding: 10px 1.1rem;
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .result-body {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-top: 0.5px solid rgba(255,255,255,0.04);
+            border-radius: 0 0 10px 10px;
+            padding: 1.1rem;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            background: var(--surface2);
+            border: 0.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.85rem 0.75rem;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 500;
+            font-family: 'DM Mono', monospace;
+            color: #fff;
+        }
+
+        .decision-bar {
+            padding: 11px 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .accepte {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 0.5px solid #99f6e4;
+        }
+
+        .refuse {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 0.5px solid #fca5a5;
+        }
+
+        .divider {
+            height: 0.5px;
+            background: var(--border);
+            margin: 0.85rem 0;
+        }
+
+        .ref-num {
+            font-size: 10px;
+            color: var(--muted);
+            text-align: right;
+            font-family: 'DM Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="logo-dot">CS</div>
+            <h1>Système de Scoring Crédit</h1>
+        </div>
+        <span class="top-bar-badge">Credit Decision · v1.0</span>
+    </div>
+
+    <div class="body">
+
+        <p class="section-label">Profil du demandeur</p>
+        <div class="card">
+            <div class="grid">
+                <div class="field">
+                    <label>Revenu annuel ($)</label>
+                    <input type="number" id="income" value="80000"/>
+                </div>
+                <div class="field">
+                    <label>Âge</label>
+                    <input type="number" id="age" value="35"/>
+                </div>
+                <div class="field">
+                    <label>Ancienneté emploi (ans)</label>
+                    <input type="number" id="emp" value="8"/>
+                </div>
+                <div class="field">
+                    <label>Défaut antérieur</label>
+                    <select id="default_file">
+                        <option value="0">Non</option>
+                        <option value="1">Oui</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <p class="section-label">Type de logement</p>
+        <div class="card">
+            <div class="toggle-group" id="logement">
+                <div class="toggle active" data-val="RENT">Locataire</div>
+                <div class="toggle" data-val="OWN">Propriétaire</div>
+                <div class="toggle" data-val="MORTGAGE">Hypothèque</div>
+            </div>
+        </div>
+
+        <p class="section-label">Détails du prêt</p>
+        <div class="card">
+            <div class="grid">
+                <div class="field">
+                    <label>Montant demandé ($)</label>
+                    <input type="number" id="amnt" value="5000"/>
+                </div>
+                <div class="field">
+                    <label>Taux d'intérêt (%)</label>
+                    <input type="number" id="rate" value="8.0" step="0.1"/>
+                </div>
+                <div class="field">
+                    <label>Ratio prêt/revenu</label>
+                    <input type="number" id="pct" value="0.06" step="0.01"/>
+                </div>
+                <div class="field">
+                    <label>Intention VENTURE</label>
+                    <select id="venture">
+                        <option value="0">Non</option>
+                        <option value="1">Oui</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <p class="section-label">Loan Grade</p>
+        <div class="card">
+            <div class="toggle-group" id="grade">
+                <div class="toggle active" data-val="AC">A/C</div>
+                <div class="toggle" data-val="B">B</div>
+                <div class="toggle" data-val="D">D</div>
+                <div class="toggle" data-val="E">E</div>
+                <div class="toggle" data-val="F">F</div>
+                <div class="toggle" data-val="G">G</div>
+            </div>
+        </div>
+
+        <button class="btn-predict" id="submitBtn" onclick="predict()">
+            Soumettre la demande
+        </button>
+
+        <div class="result" id="result">
+            <div class="result-header">Résultat de l'analyse</div>
+            <div class="result-body">
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">Prob. défaut</div>
+                        <div class="metric-value" id="res-prob">—</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Credit Score</div>
+                        <div class="metric-value" id="res-score">—</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Risque</div>
+                        <div class="metric-value" id="res-risk">—</div>
+                    </div>
+                </div>
+                <div class="decision-bar" id="res-decision"></div>
+                <div class="divider"></div>
+                <div class="ref-num" id="res-ref"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('#logement .toggle').forEach(t => {
+        t.onclick = () => {
+            document.querySelectorAll('#logement .toggle').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+        };
+    });
+
+    document.querySelectorAll('#grade .toggle').forEach(t => {
+        t.onclick = () => {
+            document.querySelectorAll('#grade .toggle').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+        };
+    });
+
+    async function predict() {
+        const btn = document.getElementById('submitBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Analyse en cours...';
+
+        const logement = document.querySelector('#logement .toggle.active').dataset.val;
+        const grade = document.querySelector('#grade .toggle.active').dataset.val;
+
+        const body = {
+            person_income: parseFloat(document.getElementById('income').value),
+            loan_percent_income: parseFloat(document.getElementById('pct').value),
+            loan_int_rate: parseFloat(document.getElementById('rate').value),
+            loan_amnt: parseFloat(document.getElementById('amnt').value),
+            person_emp_length: parseFloat(document.getElementById('emp').value),
+            person_age: parseFloat(document.getElementById('age').value),
+            cb_person_default_on_file_Y: parseFloat(document.getElementById('default_file').value),
+            person_home_ownership_RENT: logement === 'RENT' ? 1 : 0,
+            person_home_ownership_OWN: logement === 'OWN' ? 1 : 0,
+            loan_grade_D: grade === 'D' ? 1 : 0,
+            loan_grade_E: grade === 'E' ? 1 : 0,
+            loan_grade_B: grade === 'B' ? 1 : 0,
+            loan_grade_F: grade === 'F' ? 1 : 0,
+            loan_grade_G: grade === 'G' ? 1 : 0,
+            loan_intent_VENTURE: parseFloat(document.getElementById('venture').value)
+        };
+
+        try {
+            const res = await fetch('http://127.0.0.1:8010/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            const prob = data.probabilite_defaut;
+            const probPct = (prob * 100).toFixed(1) + '%';
+            const isOk = data.decision.includes('Accepté');
+            const risk = prob < 0.2 ? 'Faible' : prob < 0.5 ? 'Modéré' : 'Élevé';
+
+            document.getElementById('res-prob').textContent = probPct;
+            document.getElementById('res-score').textContent = data.credit_score;
+            document.getElementById('res-risk').textContent = risk;
+
+            const decEl = document.getElementById('res-decision');
+            decEl.textContent = isOk ? '✅ Demande approuvée — Crédit accordé' : '❌ Demande refusée — Risque trop élevé';
+            decEl.className = 'decision-bar ' + (isOk ? 'accepte' : 'refuse');
+
+            document.getElementById('res-ref').textContent =
+                'Réf: ' + Date.now() + ' · ' + new Date().toLocaleString('fr-FR');
+
+            document.getElementById('result').classList.add('show');
+
+        } catch (e) {
+            alert("Erreur de connexion — vérifiez que l'API tourne sur le port 8010.");
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Soumettre la demande';
+        }
+    }
+</script>
+</body>
+</html>
