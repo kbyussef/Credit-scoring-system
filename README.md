@@ -1,109 +1,98 @@
-# 🏦 Credit Scoring System
+# Credit Scoring & Portfolio Management Platform
 
-> Système de scoring crédit performant, interprétable et équitable
-> Développé par **Youssef Kassabi** — CMC Nouacer-Casablanca | 2025-2026
+Full-stack web application for automated credit risk assessment, built as a final graduation project (PFE). The platform combines a trained machine learning model with a banking-style interface to help credit analysts evaluate loan applications and monitor portfolio performance.
 
----
+Developed as part of the *Assistant Data Analyst — Intelligence Artificielle* diploma at OFPPT (CMC Nouaceur, Casablanca-Settat), successfully defended.
 
-## 📋 Description
+## Context
 
-Ce projet implémente un système complet d'analyse du risque client pour l'octroi de crédit, couvrant :
+Credit institutions need a fast, consistent, and explainable way to assess borrower risk. This project addresses that need by combining a scoring model with a role-based web application, allowing analysts and managers to review applications, track decisions, and export reports without relying on manual spreadsheets.
 
-- Prétraitement des données (WOE, StandardScaler)
-- Modélisation par Régression Logistique
-- Validation (AUC = 0.94, Gini = 0.87, KS = 0.71)
-- Analyse de l'équité (Fairness < 2%)
-- Dashboard interactif Power BI (5 pages)
-- API de scoring FastAPI
-- Interface web bancaire HTML/CSS
+## Features
 
----
+- Role-based authentication (Admin, Manager, Analyst), each with its own permissions
+- Real-time credit scoring, displayed on a 300–850 gauge
+- Portfolio dashboards built with Chart.js
+- Interface available in French, English, and Arabic
+- Dark and light themes
+- Excel export of reports (SheetJS)
+- Print-ready loan decision summaries
+- Fairness checks on the underlying model (Fairlearn)
 
-## 📊 Performance du Modèle
+## Model
 
-| Métrique | Valeur | Seuil Bâle III |
-|---|---|---|
-| AUC-ROC | **0.94** | ≥ 0.75 ✅ |
-| Gini | **0.87** | ≥ 0.50 ✅ |
-| KS Statistic | **0.71** | — ✅ |
-| Accuracy | **91%** | — ✅ |
-| Precision | **90%** | — ✅ |
-| Recall | **70%** | — ⚠️ |
-| Écart Fairness | **2.09%** | < 20% ✅ |
+The scoring model is a Logistic Regression trained on the LendingClub dataset (Kaggle, 3,816 records). Logistic Regression was chosen over more complex models such as XGBoost primarily for interpretability — under Bâle III requirements, every score needs to be explainable to auditors and regulators, which a linear model provides more directly than a black-box one.
 
----
+Performance on the test set:
 
-## 🗂️ Structure du Projet
-
-credit-scoring-system/
-│
-├── 📓 notebook/
-│   └── credit_scoring.ipynb
-│
-├── 🤖 api/
-│   ├── main.py
-│   ├── credit_model.pkl
-│   └── scaler.pkl
-│
-├── 🌐 interface/
-│   └── index.html
-│
-├── 📊 dashboard/
-│   └── credit_scoring.pbix
-│
-└── 📄 README.md
-
----
-
-## 🚀 Lancer l'API
-
-pip install fastapi uvicorn pydantic joblib scikit-learn pandas
-
-python main.py
-
-API : http://127.0.0.1:8080
-Swagger : http://127.0.0.1:8080/docs
-
----
-
-## 📡 Exemple de Réponse
-
-{
-  "probabilite_defaut": 0.0046,
-  "credit_score": 868.45,
-  "decision": "Accepté ✅"
-}
-
----
-
-## 📈 Dashboard Power BI
-
-| Page | Contenu |
+| Metric | Value |
 |---|---|
-| 1 | Performance & Risque du Portefeuille |
-| 2 | Analyse Opérationnelle & Équité |
-| 3 | Simulation Économique & Stratégie d'Octroi |
-| 4 | Équité & Fairness du Modèle |
-| 5 | Outil d'Aide à la Décision |
+| AUC | 0.94 |
+| Gini | 0.87 |
+| KS statistic | 0.71 |
+| Accuracy | 91% |
 
----
+Feature selection was done using Information Value (IV) via `scorecardpy`. The final probability is converted to a score using:
 
-## 🛠️ Technologies
+```
+Score = 600 + 50 × log((1 − p) / p)
+```
 
-| Catégorie | Technologies |
-|---|---|
-| Modélisation | Python, Scikit-learn, Logistic Regression |
-| Validation | AUC-ROC, Gini, KS, Matrice de Confusion |
-| Fairness | Écart d'approbation, Demographic Parity |
-| Reporting | Power BI, DAX |
-| Déploiement | FastAPI, Uvicorn |
-| Interface | HTML, CSS, JavaScript |
-| Versioning | GitHub |
+where `p` is the model's predicted probability of default.
 
----
+## Architecture
 
-## 👤 Auteur  :Youssef Kassabi
- : intelligence artificielle option DATA ANALYST(OFPPT)
-Filière : Intelligence Artificielle — Assistant Data Analyst
-CMC Nouacer-Casablanca | 2025-2026
-Encadrant : M. Saber Hamza
+The frontend is a static HTML/CSS/JS page (`credit_scoring_final.html`) that communicates with a FastAPI backend. The backend handles authentication, business logic, and serves predictions from the serialized model (`credit_model.pkl`, `scaler.pkl`), and persists data through SQLAlchemy to a PostgreSQL database (`credit_scoring`).
+
+```
+Frontend (HTML/CSS/JS)  →  FastAPI backend  →  PostgreSQL (credit_scoring)
+                                 ↓
+                     ML model (credit_model.pkl + scaler.pkl)
+```
+
+## Setup
+
+Requirements: Python 3.10+, PostgreSQL 14+
+
+```bash
+git clone https://github.com/kbyussef/Credit-scoring-system.git
+cd Credit-scoring-system
+pip install -r requirements.txt
+```
+
+Create a `.env` file with the database connection string. If the database password contains an `@` character, it must be URL-encoded as `%40`:
+
+```
+DATABASE_URL=postgresql://user:password%40@localhost:5432/credit_scoring
+```
+
+Start the server:
+
+```bash
+uvicorn main:app --reload
+```
+
+On first run, seed the database:
+
+```bash
+curl -X POST http://localhost:8000/seed
+```
+
+The application is then available at `http://localhost:8000`.
+
+## Reporting
+
+A companion Power BI dashboard (5 pages) was built alongside the platform, with DAX measures such as `Revenu_Net_Estime`, `Perte_Estimee`, and `ROI_Portefeuille`, used to monitor portfolio-level indicators beyond individual scoring decisions.
+
+## Tech stack
+
+FastAPI, PostgreSQL, SQLAlchemy, scikit-learn, Chart.js, SheetJS, Power BI / DAX
+
+## Author
+
+Youssef Kassabi
+[LinkedIn](https://www.linkedin.com/in/youssef-kassabi-367590372/)
+
+## License
+
+MIT — see [LICENSE](LICENSE).
